@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>OPERATION: SUBCRAWL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+:root {
+  --orange: #F0681E;
+  --orange-dark: #C04D0E;
+  --orange-light: #FF8340;
+  --charcoal: #1A1A1A;
+  --charcoal-mid: #222222;
+  --charcoal-light: #2C2C2C;
+  --cream: #F0EBE0;
+  --cream-dim: #A89E8A;
+  --white: #FFFFFF;
+  --green-ok: #3DBA6F;
+  --red-alert: #E03030;
+  --amber: #F5A623;
+  --font-main: 'Barlow Condensed', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--charcoal);
+  color: var(--cream);
+  font-family: var(--font-main);
+  min-height: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+button, a {
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  z-index: 1;
+}
+
+.hub-tile, .stop-item, .score-card {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* TOP BAR */
+.topbar {
+  background: var(--orange);
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.topbar-logo {
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--charcoal);
+  text-transform: uppercase;
+}
+.topbar-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(0,0,0,0.6);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.dot-live {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--charcoal);
+  animation: blink 1.4s infinite;
+}
+@keyframes blink { 0%,100%{opacity:0.8} 50%{opacity:0.15} }
+
+.orange-stripe { background: var(--orange); height: 5px; flex-shrink: 0; opacity: 0.35; }
+
+/* PROGRESS STRIP */
+.progress-strip {
+  background: var(--charcoal-light);
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.progress-label { font-family: var(--font-mono); font-size: 9px; color: var(--cream-dim); letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
+.progress-bar-wrap { flex: 1; height: 3px; background: rgba(255,255,255,0.08); }
+.progress-bar-fill { height: 100%; background: var(--orange); }
+.progress-count { font-family: var(--font-mono); font-size: 9px; color: var(--orange); letter-spacing: 1px; flex-shrink: 0; }
+
+/* BACK */
+.back-row { padding: 14px 16px 0; }
+.back-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--cream-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.back-btn::before { content: '←'; font-size: 13px; }
+.back-btn:active { color: var(--orange); }
+
+/* CONTENT */
+.content { padding: 20px 16px 32px; flex: 1; }
+
+/* TYPE */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--orange);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.big-title {
+  font-family: var(--font-main);
+  font-weight: 900;
+  font-size: clamp(3rem, 15vw, 4.2rem);
+  line-height: 0.88;
+  text-transform: uppercase;
+  color: var(--white);
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.big-title .orange { color: var(--orange); }
+.subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cream-dim);
+  line-height: 1.75;
+  margin-bottom: 28px;
+}
+
+/* BTNS */
+.btn-primary {
+  display: block; width: 100%;
+  background: var(--orange); color: var(--charcoal);
+  font-family: var(--font-main); font-weight: 900;
+  font-size: 18px; letter-spacing: 4px; text-transform: uppercase;
+  padding: 16px; border: none; cursor: pointer; margin-bottom: 10px;
+  transition: background 0.1s;
+}
+.btn-primary:active { background: var(--orange-dark); }
+
+.btn-ghost {
+  display: block; width: 100%;
+  background: transparent; color: var(--cream);
+  font-family: var(--font-main); font-weight: 700;
+  font-size: 15px; letter-spacing: 3px; text-transform: uppercase;
+  padding: 13px; border: 1px solid rgba(255,255,255,0.12); cursor: pointer; margin-bottom: 10px;
+}
+.btn-ghost:active { border-color: var(--orange); color: var(--orange); }
+
+.btn-danger {
+  display: block; width: 100%;
+  background: transparent; color: var(--red-alert);
+  font-family: var(--font-main); font-weight: 700;
+  font-size: 16px; letter-spacing: 3px; text-transform: uppercase;
+  padding: 14px; border: 1px solid var(--red-alert); cursor: pointer; margin-bottom: 10px;
+}
+.btn-danger:active { background: var(--red-alert); color: #fff; }
+
+.generate-btn {
+  display: block; width: 100%;
+  background: var(--orange); color: var(--charcoal);
+  font-family: var(--font-main); font-weight: 900;
+  font-size: 20px; letter-spacing: 4px; text-transform: uppercase;
+  padding: 18px; border: none; cursor: pointer;
+}
+.generate-btn:active { background: var(--orange-dark); transform: scale(0.99); }
+.generate-btn.red-gen { background: var(--red-alert); }
+.generate-btn.red-gen:active { background: #aa1111; }
+.generate-btn.amber-gen { background: var(--amber); }
+.generate-btn.amber-gen:active { background: #c07800; }
+
+/* RULES */
+.rules-list { list-style: none; margin: 14px 0 20px; }
+.rules-list li {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cream-dim);
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  gap: 12px;
+  line-height: 1.5;
+  align-items: flex-start;
+}
+.rule-num { color: var(--orange); flex-shrink: 0; font-size: 10px; padding-top: 1px; }
+.rules-alert { font-family: var(--font-mono); font-size: 10px; color: var(--red-alert); letter-spacing: 2px; margin-bottom: 20px; }
+
+/* AGENT INPUTS */
+.agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 10px; }
+.agent-input {
+  background: var(--charcoal-light);
+  border: none; border-bottom: 2px solid var(--orange);
+  color: var(--white);
+  font-family: var(--font-mono); font-size: 12px;
+  padding: 10px 10px;
+  outline: none; width: 100%;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.agent-input::placeholder { color: rgba(255,255,255,0.18); }
+.agent-input:focus { border-bottom-color: var(--cream); }
+.add-agent-btn {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
+  color: var(--orange); background: none;
+  border: 1px dashed rgba(240,104,30,0.35);
+  cursor: pointer; padding: 10px; width: 100%; text-transform: uppercase; margin-bottom: 4px;
+}
+.add-agent-btn:active { background: rgba(240,104,30,0.08); }
+
+/* HUB GRID */
+.hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+.hub-tile {
+  background: var(--charcoal-mid);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 18px 14px 16px;
+  cursor: pointer;
+  display: flex; flex-direction: column; gap: 5px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.1s;
+}
+.hub-tile .accent-bar {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--orange); pointer-events: none;
+}
+.hub-tile:active { border-color: rgba(240,104,30,0.4); opacity: 0.85; }
+.hub-tile .tile-icon { font-size: 22px; line-height: 1; margin-bottom: 2px; }
+.hub-tile .tile-name { font-family: var(--font-main); font-weight: 700; font-size: 17px; letter-spacing: 1px; text-transform: uppercase; color: var(--white); line-height: 1; }
+.hub-tile .tile-sub { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1px; color: rgba(255,255,255,0.25); text-transform: uppercase; }
+.hub-tile.tile-red .accent-bar { background: var(--red-alert); }
+.hub-tile.tile-red .tile-name { color: #FF7070; }
+.hub-tile.tile-amber .accent-bar { background: var(--amber); }
+.hub-tile.tile-amber .tile-name { color: var(--amber); }
+
+/* DIRECTIVE CARD */
+.directive-card {
+  background: var(--charcoal-mid);
+  border-left: 4px solid var(--orange);
+  padding: 16px; margin: 14px 0; min-height: 90px;
+}
+.directive-card.red-card { border-left-color: var(--red-alert); }
+.directive-card.amber-card { border-left-color: var(--amber); }
+.directive-tag { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; color: var(--orange); text-transform: uppercase; margin-bottom: 8px; }
+.directive-tag.red-tag { color: var(--red-alert); }
+.directive-tag.amber-tag { color: var(--amber); }
+.directive-text { font-family: var(--font-main); font-weight: 600; font-size: 22px; color: var(--white); line-height: 1.15; }
+.directive-rule { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 1px; margin-top: 12px; line-height: 1.8; text-transform: uppercase; }
+
+/* ROUTE STOP LIST */
+.stop-list { display: flex; flex-direction: column; }
+.stop-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+}
+.stop-item:active { background: rgba(240,104,30,0.04); }
+.stop-dot-col { width: 24px; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.stop-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 3px solid var(--orange); background: var(--charcoal);
+  flex-shrink: 0; transition: all 0.15s;
+}
+.stop-dot.visited { background: var(--orange); border-color: var(--orange); }
+.stop-dot.current { background: var(--white); border-color: var(--white); box-shadow: 0 0 0 3px rgba(255,255,255,0.12); }
+.stop-line { width: 3px; height: 12px; background: rgba(240,104,30,0.35); }
+.stop-name-text { font-family: var(--font-main); font-weight: 700; font-size: 17px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--cream-dim); flex: 1; line-height: 1; }
+.stop-name-text.current-name { color: var(--white); }
+.stop-name-text.visited-name { color: rgba(255,255,255,0.25); text-decoration: line-through; }
+.stop-badge { font-family: var(--font-mono); font-size: 8px; letter-spacing: 1px; padding: 3px 6px; flex-shrink: 0; }
+.badge-here { background: var(--white); color: var(--charcoal); }
+.badge-done { background: var(--orange); color: var(--charcoal); }
+.stop-num { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,0.15); flex-shrink: 0; min-width: 18px; text-align: right; }
+
+/* SCOREBOARD */
+.score-cards { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.score-card {
+  background: var(--charcoal-mid);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer;
+}
+.score-card:active { border-color: rgba(240,104,30,0.4); }
+.score-card-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px; color: rgba(255,255,255,0.25); text-transform: uppercase; margin-bottom: 4px; }
+.score-card-name { font-family: var(--font-main); font-weight: 700; font-size: 21px; letter-spacing: 2px; text-transform: uppercase; color: var(--white); }
+.score-card-icon { font-size: 22px; }
+.score-card.mvp-card { border-left: 3px solid var(--amber); }
+.score-card.mvp-card .score-card-name { color: var(--amber); }
+.score-card.chaos-card { border-left: 3px solid var(--red-alert); }
+.score-card.chaos-card .score-card-name { color: #FF7070; }
+.score-card.drink-card { border-left: 3px solid var(--green-ok); }
+.score-card.drink-card .score-card-name { color: var(--green-ok); }
+.tap-hint { font-family: var(--font-mono); font-size: 9px; color: rgba(255,255,255,0.18); letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase; }
+
+/* FINAL */
+.final-stamp { font-family: var(--font-main); font-weight: 900; font-size: clamp(3.5rem, 18vw, 5rem); color: var(--orange); line-height: 0.85; text-transform: uppercase; letter-spacing: -2px; margin-bottom: 20px; }
+
+/* SUBWAY MAP SVG wrapper */
+.subway-map-wrap { padding: 20px 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- ════ START ════ -->
+<div id="screen-start" class="screen active">
+  <div class="topbar">
+    <span class="topbar-logo">SPY SUBCRAWL</span>
+    <span class="topbar-status"><span class="dot-live"></span>CLASSIFIED</span>
+  </div>
+
+  <!-- Mini subway map -->
+  <div class="subway-map-wrap">
+    <svg viewBox="0 0 380 88" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+      <rect x="8" y="8" width="364" height="72" rx="36" fill="none" stroke="#F0681E" stroke-width="16"/>
+      <rect x="8" y="8" width="364" height="72" rx="36" fill="none" stroke="#1A1A1A" stroke-width="9"/>
+      <!-- outer ring stops -->
+      <circle cx="48" cy="44" r="5" fill="#F0681E"/>
+      <circle cx="88" cy="16" r="5" fill="#F0681E"/>
+      <circle cx="140" cy="10" r="5" fill="#F0681E"/>
+      <circle cx="190" cy="10" r="5" fill="#F0681E"/>
+      <circle cx="245" cy="16" r="5" fill="#F0681E"/>
+      <circle cx="332" cy="44" r="5.5" fill="#FFFFFF" stroke="#F0681E" stroke-width="2"/>
+      <circle cx="245" cy="72" r="5" fill="#F0681E"/>
+      <circle cx="190" cy="78" r="5" fill="#F0681E"/>
+      <circle cx="140" cy="78" r="5" fill="#F0681E"/>
+      <circle cx="88" cy="72" r="5" fill="#F0681E"/>
+      <!-- arrows -->
+      <text x="185" y="33" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.2)" text-anchor="middle">→</text>
+      <text x="185" y="62" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.2)" text-anchor="middle">←</text>
+      <!-- start label -->
+      <text x="332" y="33" font-family="'Barlow Condensed',sans-serif" font-size="7.5" fill="#FFFFFF" font-weight="700" text-anchor="middle" letter-spacing="1">START</text>
+    </svg>
+  </div>
+
+  <div class="content">
+    <div class="section-label">// OPERATION ACTIVE //</div>
+    <div class="big-title">OPERATION<br><span class="orange">SUB</span>CRAWL</div>
+    <p class="subtitle">15 stops. Zero restraint.<br>Starting at Hootenany. Destination: chaos.</p>
+    <button class="btn-primary" onclick="goTo('screen-names')">START MISSION</button>
+    <button class="btn-ghost" onclick="goTo('screen-rules')">VIEW RULES</button>
+    <button class="btn-ghost" onclick="goTo('screen-points')">POINT SYSTEM</button>
+    <button class="btn-ghost" onclick="goTo('screen-route')">VIEW ROUTE</button>
+  </div>
+</div>
+
+<!-- ════ RULES ════ -->
+<div id="screen-rules" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">MISSION PARAMETERS</span>
+    <span class="topbar-status"><span class="dot-live"></span>BRIEFING</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="goTo('screen-start')">ABORT</button></div>
+  <div class="content">
+    <div class="section-label">// FIELD REGULATIONS //</div>
+    <div class="big-title" style="font-size:2.8rem;">MISSION<br>RULES</div>
+    <ul class="rules-list">
+      <li><span class="rule-num">01</span>Find a quiz night? Take part.</li>
+      <li><span class="rule-num">02</span>Subway Card Thief</li>
+      <li><span class="rule-num">03</span>Max 30 minutes per location</li>
+      <li><span class="rule-num">04</span>No skipping stops</li>
+      <li><span class="rule-num">05</span>Everyone participates. No passengers.</li>
+      <li><span class="rule-num">06</span>Win a prompt = 1 skip for Drink OR Forfeit</li>
+      <li><span class="rule-num">07</span>Hydration is encouraged but will be ignored</li>
+    </ul>
+    <div class="rules-alert">⚠ Skipping does not omit you from points.</div>
+    <button class="btn-ghost" onclick="goTo('screen-points')" style="margin-bottom:10px;">VIEW POINT SYSTEM</button>
+    <button class="btn-primary" onclick="goTo('screen-names')">ACCEPT & CONTINUE</button>
+  </div>
+</div>
+
+<!-- ════ AGENTS ════ -->
+<div id="screen-names" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">AGENT REGISTRATION</span>
+    <span class="topbar-status"><span class="dot-live"></span>SECURE</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="goTo('screen-start')">BACK</button></div>
+  <div class="content">
+    <div class="section-label">// IDENTIFY OPERATIVES //</div>
+    <div class="big-title" style="font-size:2.8rem;">FIELD<br>AGENTS</div>
+    <p style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-bottom:2px;text-transform:uppercase;">Enter 2–8 agent codenames</p>
+    <div class="agent-grid" id="agent-inputs">
+      <input class="agent-input" placeholder="Agent 1"/>
+      <input class="agent-input" placeholder="Agent 2"/>
+      <input class="agent-input" placeholder="Agent 3"/>
+      <input class="agent-input" placeholder="Agent 4"/>
+    </div>
+    <button class="add-agent-btn" onclick="addAgent()">+ Add Operative</button>
+    <button class="btn-primary" onclick="startMission()" style="margin-top:14px;">CONFIRM ROSTER</button>
+  </div>
+</div>
+
+<!-- ════ ROUTE ════ -->
+<div id="screen-route" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">SUBCRAWL ROUTE</span>
+    <span class="topbar-status" id="route-topbar-status"><span class="dot-live"></span>0/15</span>
+  </div>
+  <div class="progress-strip">
+    <span class="progress-label">Route</span>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="route-pbar" style="width:0%"></div></div>
+    <span class="progress-count" id="route-pcount">0 / 15</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="goTo('screen-hub')">HUB</button></div>
+  <div class="content">
+    <div class="section-label">// SUBCRAWL CIRCUIT //</div>
+    <p style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:1px;margin-bottom:14px;text-transform:uppercase;">Tap a stop to advance the route</p>
+    <div class="stop-list" id="stop-list"></div>
+  </div>
+</div>
+
+<!-- ════ HUB ════ -->
+<div id="screen-hub" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">MISSION CONTROL</span>
+    <span class="topbar-status"><span class="dot-live"></span>ACTIVE</span>
+  </div>
+  <div class="progress-strip">
+    <span class="progress-label">Stop</span>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="hub-pbar" style="width:0%"></div></div>
+    <span class="progress-count" id="hub-stop-name" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">HOOTENANY</span>
+  </div>
+  <div class="content">
+    <div class="section-label">// SELECT DIRECTIVE //</div>
+    <div class="hub-grid">
+      <div class="hub-tile" onclick="goTo('screen-drinks')">
+        <span class="tile-icon">🎯</span>
+        <span class="tile-name">Drink<br>Prompt</span>
+        <span class="tile-sub">Directive</span>
+        <div class="accent-bar"></div>
+      </div>
+      <div class="hub-tile tile-amber" onclick="goTo('screen-quests')">
+        <span class="tile-icon">🕵️</span>
+        <span class="tile-name">Side<br>Quest</span>
+        <span class="tile-sub">Field Op</span>
+        <div class="accent-bar"></div>
+      </div>
+      <div class="hub-tile tile-red" onclick="goTo('screen-forfeits')">
+        <span class="tile-icon">💀</span>
+        <span class="tile-name">Forfeit</span>
+        <span class="tile-sub">Punishment</span>
+        <div class="accent-bar"></div>
+      </div>
+      <div class="hub-tile tile-amber" onclick="goTo('screen-scoreboard')">
+        <span class="tile-icon">🏆</span>
+        <span class="tile-name">Score<br>board</span>
+        <span class="tile-sub">Debrief</span>
+        <div class="accent-bar"></div>
+      </div>
+    </div>
+    <div class="directive-card">
+      <div class="directive-tag">// LAST DIRECTIVE //</div>
+      <div class="directive-text" id="hub-last-text" style="color:rgba(255,255,255,0.25);font-size:15px;font-weight:400;">Awaiting instruction...</div>
+    </div>
+    <button class="btn-ghost" onclick="goTo('screen-route')" style="font-size:13px;padding:10px;letter-spacing:2px;">VIEW ROUTE MAP →</button>
+    <button class="btn-ghost" onclick="goTo('screen-points')" style="font-size:13px;padding:10px;letter-spacing:2px;">POINT SYSTEM →</button>
+  </div>
+</div>
+
+<!-- ════ DRINKS ════ -->
+<div id="screen-drinks" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">DRINK DIRECTIVE</span>
+    <span class="topbar-status"><span class="dot-live"></span>ORDER ACTIVE</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="goTo('screen-hub')">HUB</button></div>
+  <div class="content">
+    <div class="section-label">// DRINK DIRECTIVES //</div>
+    <div class="big-title" style="font-size:2.6rem;">ORDER<br>ISSUED</div>
+    <div class="directive-card">
+      <div class="directive-tag">// ACTIVE ORDER //</div>
+      <div class="directive-text" id="drink-text" style="color:rgba(255,255,255,0.25);font-size:15px;font-weight:400;">Generate a directive below</div>
+    </div>
+    <button class="generate-btn" onclick="generateDrink()">GENERATE DIRECTIVE</button>
+    <div class="directive-rule" style="margin-top:14px;">// Rule: Explain your drink choice //<br>// Group votes best and worst //<br>// Winner +3 | Second +2 | Third +1 //</div>
+  </div>
+</div>
+
+<!-- ════ QUESTS ════ -->
+<div id="screen-quests" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">FIELD OPERATION</span>
+    <span class="topbar-status"><span class="dot-live"></span>DEPLOYING</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="goTo('screen-hub')">HUB</button></div>
+  <div class="content">
+    <div class="section-label">// FIELD OPERATIONS //</div>
+    <div class="big-title" style="font-size:2.6rem;color:var(--amber);">MISSION<br>DEPLOY</div>
+    <div class="directive-card amber-card">
+      <div class="directive-tag amber-tag">// ACTIVE MISSION //</div>
+      <div class="directive-text" id="quest-text" style="color:rgba(255,255,255,0.25);font-size:15px;font-weight:400;">Deploy operation below</div>
+    </div>
+    <button class="generate-btn amber-gen" onclick="generateQuest()">DEPLOY OPERATION</button>
+    <div class="directive-rule" style="margin-top:14px;">// Complete = +2 pts //<br>// Failure = immediate forfeit (−2 pts) //<br>// No negotiations //</div>
+  </div>
+</div>
+
+<!-- ════ FORFEITS ════ -->
+<div id="screen-forfeits" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">PUNISHMENT PROTOCOL</span>
+    <span class="topbar-status"><span class="dot-live"></span>SENTENCED</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="goTo('screen-hub')">HUB</button></div>
+  <div class="content">
+    <div class="section-label">// PUNISHMENT ISSUED //</div>
+    <div class="big-title" style="font-size:2.6rem;color:var(--red-alert);">SENTENCE<br>ACTIVE</div>
+    <div class="directive-card red-card">
+      <div class="directive-tag red-tag">// SENTENCE //</div>
+      <div class="directive-text" id="forfeit-text" style="color:rgba(255,255,255,0.25);font-size:15px;font-weight:400;">Issue sentence below</div>
+    </div>
+    <button class="generate-btn red-gen" onclick="generateForfeit()">ISSUE SENTENCE</button>
+    <div class="directive-rule" style="margin-top:14px;color:rgba(224,48,48,0.5);">// Taking a forfeit = −2 pts //<br>// No refusals. No negotiations. //</div>
+  </div>
+</div>
+
+<!-- ════ SCOREBOARD ════ -->
+<div id="screen-scoreboard" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">MISSION STATUS</span>
+    <span class="topbar-status"><span class="dot-live"></span>DEBRIEF</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="goTo('screen-hub')">HUB</button></div>
+  <div class="content">
+    <div class="section-label">// AGENT RATINGS //</div>
+    <div class="big-title" style="font-size:2.6rem;margin-bottom:6px;">SCORE<br>BOARD</div>
+    <div class="tap-hint">// Tap to randomly assign an agent //</div>
+    <div class="score-cards">
+      <div class="score-card mvp-card" onclick="assignAgent('sb-mvp')">
+        <div><div class="score-card-label">MVP — Most Points</div><div class="score-card-name" id="sb-mvp">— TAP —</div></div>
+        <div class="score-card-icon">🏆</div>
+      </div>
+      <div class="score-card chaos-card" onclick="assignAgent('sb-chaos')">
+        <div><div class="score-card-label">Chaos Agent</div><div class="score-card-name" id="sb-chaos">— TAP —</div></div>
+        <div class="score-card-icon">💀</div>
+      </div>
+      <div class="score-card" onclick="assignAgent('sb-liability')" style="border-left:3px solid rgba(255,255,255,0.15);">
+        <div><div class="score-card-label">Liability</div><div class="score-card-name" id="sb-liability" style="color:rgba(255,255,255,0.5);">— TAP —</div></div>
+        <div class="score-card-icon">🚨</div>
+      </div>
+      <div class="score-card drink-card" onclick="assignAgent('sb-drink')">
+        <div><div class="score-card-label">Best Drink Interpretation</div><div class="score-card-name" id="sb-drink">— TAP —</div></div>
+        <div class="score-card-icon">🍹</div>
+      </div>
+    </div>
+    <button class="btn-danger" onclick="goTo('screen-final')" style="margin-top:18px;">END MISSION</button>
+  </div>
+</div>
+
+<!-- ════ FINAL ════ -->
+<div id="screen-final" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">MISSION COMPLETE</span>
+    <span class="topbar-status"><span class="dot-live" style="background:var(--amber);"></span>CONCLUDED</span>
+  </div>
+  <div class="content" style="display:flex;flex-direction:column;justify-content:center;flex:1;">
+    <div class="section-label">// OPERATION CONCLUDED //</div>
+    <div class="final-stamp">MISSION<br>COMPLETE</div>
+    <p style="font-family:var(--font-mono);font-size:12px;color:var(--cream-dim);line-height:1.8;margin-bottom:8px;">You made it. Details are unclear.<br>Memories are unreliable.</p>
+    <p style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.18);letter-spacing:1px;margin-bottom:32px;line-height:2;">// Review footage at your own risk //<br>// This was a bad idea. Proceed anyway //</p>
+    <button class="btn-primary" onclick="restartChaos()">RESTART CHAOS</button>
+  </div>
+</div>
+
+<!-- ════ POINTS ════ -->
+<div id="screen-points" class="screen">
+  <div class="topbar">
+    <span class="topbar-logo">POINT SYSTEM</span>
+    <span class="topbar-status"><span class="dot-live"></span>CLASSIFIED</span>
+  </div>
+  <div class="back-row"><button class="back-btn" onclick="history.go(-1) || goTo('screen-rules')">BACK</button></div>
+  <div class="content">
+    <div class="section-label">// SCORING PROTOCOL //</div>
+    <div class="big-title" style="font-size:2.8rem;margin-bottom:16px;">POINT<br>SYSTEM</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+
+      <div style="background:var(--charcoal-mid);border-left:4px solid var(--orange);padding:14px 16px;">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--orange);margin-bottom:8px;">// DRINK PROMPTS //</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Winner</span>
+            <span style="font-family:var(--font-mono);font-size:14px;color:var(--orange);">+3 pts</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Second</span>
+            <span style="font-family:var(--font-mono);font-size:14px;color:var(--orange);">+2 pts</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Third</span>
+            <span style="font-family:var(--font-mono);font-size:14px;color:var(--orange);">+1 pt</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--charcoal-mid);border-left:4px solid var(--amber);padding:14px 16px;">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--amber);margin-bottom:8px;">// SIDE QUESTS //</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Complete quest</span>
+          <span style="font-family:var(--font-mono);font-size:14px;color:var(--amber);">+2 pts</span>
+        </div>
+      </div>
+
+      <div style="background:var(--charcoal-mid);border-left:4px solid var(--red-alert);padding:14px 16px;">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--red-alert);margin-bottom:8px;">// FORFEITS //</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Take a forfeit</span>
+          <span style="font-family:var(--font-mono);font-size:14px;color:var(--red-alert);">−2 pts</span>
+        </div>
+      </div>
+
+      <div style="background:var(--charcoal-mid);border-left:4px solid var(--green-ok);padding:14px 16px;">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--green-ok);margin-bottom:8px;">// CARD THIEF //</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Steal the card</span>
+          <span style="font-family:var(--font-mono);font-size:14px;color:var(--green-ok);">+1 pt</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Lose the card</span>
+          <span style="font-family:var(--font-mono);font-size:14px;color:var(--red-alert);">−1 pt</span>
+        </div>
+      </div>
+
+      <div style="background:var(--charcoal-mid);border-left:4px solid rgba(255,255,255,0.2);padding:14px 16px;">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);margin-bottom:8px;">// HAZARDS //</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--font-main);font-size:16px;font-weight:600;text-transform:uppercase;">Trip / Walk into / Fall</span>
+          <span style="font-family:var(--font-mono);font-size:14px;color:var(--red-alert);">−1 pt</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:1px;margin-bottom:20px;text-transform:uppercase;">// Skipping does not omit you from points //</div>
+    <button class="btn-primary" onclick="goTo('screen-names')">ACCEPT & CONTINUE</button>
+  </div>
+</div>
+
+<script>
+const stops = [
+  "Hootenany","Waxy O'Connors","The Three Judges","Deoch An Dorus",
+  "Brechin's Bar","The Louden Tavern","The Kensington","The Bellrock",
+  "The Viceroy","The Star Bar","The Laurieston","Curlers Rest",
+  "Inn Deep","Castle Vaults","The Station Bar"
+];
+
+const drinks = [
+  "Pick a drink for the person to your left",
+  "A drink your 16-year-old self would think is cool",
+  "A drink that looks like a terrible decision",
+  "A drink that's based off your outfit",
+  "A drink your mom won't approve of",
+  "Let the bartender decide your fate",
+  "A drink you'd spill all over your nemesis",
+  "Play darts — furthest from bullseye double drinks",
+  "If TISB and KV had a baby, what drink would that baby get?",
+  "You are Sudeep from 'what ra sudeep' — what drink are you getting?",
+  "A drink that's representative of your job",
+  "A drink you would share with Sadhguru",
+  "A drink that reminds you of the old Kanye",
+  "Close your eyes and point at the menu",
+  "Drink what the stranger next to you is having"
+];
+
+const quests = [
+  "Take a photo with a stranger",
+  "Convince someone you know them",
+  "Get someone to join your crawl",
+  "Order with a fake accent",
+  "Make the bartender laugh",
+  "Swap drinks halfway",
+  "No talking till the next pub",
+  "Challenge someone to a pushup contest",
+  "Trade an item with a stranger",
+  "Give a very passionate speech on a political issue you care about",
+  "Ask the group to draw a stranger at the bar — then find them",
+  "Get someone to put you on their lockscreen",
+  "'Who's at the door' — last to knock takes a forfeit",
+  "Collect photos of 'People Make Glasgow'",
+  "Say the Word Game"
+];
+
+const forfeits = [
+  "Take a mystery shot",
+  "No phone until next pub",
+  "Let the group order your next drink",
+  "Team picks a character for you to play till the next pub",
+  "Perform a dramatic monologue",
+  "Only speak in questions for 5 minutes",
+  "Drink whatever the group gives you",
+  "Tell the group your favourite drink",
+  "Airdrop a photo the group picks",
+  "Find your own way to the next pub — no maps",
+  "Swap an article of clothing with the person opposite",
+  "Vegan dinner",
+  "Socks off",
+  "Order in a foreign language — no English",
+  "Team picks 3 words you can't use"
+];
+
+let agents = [];
+let currentStop = 0;
+let visitedStops = new Set([0]);
+let usedDrinks = [], usedQuests = [], usedForfeits = [];
+
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if (id === 'screen-route') renderStops();
+  if (id === 'screen-hub') syncHubProgress();
+}
+
+function addAgent() {
+  const g = document.getElementById('agent-inputs');
+  if (g.children.length >= 8) return;
+  const inp = document.createElement('input');
+  inp.className = 'agent-input';
+  inp.placeholder = 'Agent ' + (g.children.length + 1);
+  g.appendChild(inp);
+}
+
+function startMission() {
+  const inputs = document.querySelectorAll('#agent-inputs .agent-input');
+  agents = Array.from(inputs).map(i => i.value.trim().toUpperCase()).filter(Boolean);
+  if (agents.length < 2) { alert('Need at least 2 agents.'); return; }
+  currentStop = 0; visitedStops = new Set([0]);
+  usedDrinks = []; usedQuests = []; usedForfeits = [];
+  resetScoreboard(); syncHubProgress(); goTo('screen-hub');
+}
+
+function renderStops() {
+  const list = document.getElementById('stop-list');
+  list.innerHTML = '';
+  const total = stops.length;
+  const visited = visitedStops.size;
+  document.getElementById('route-pbar').style.width = (visited/total*100)+'%';
+  document.getElementById('route-pcount').textContent = visited + ' / ' + total;
+  document.getElementById('route-topbar-status').innerHTML = '<span class="dot-live"></span>' + visited + '/' + total;
+
+  stops.forEach((name, i) => {
+    const isCurrent = i === currentStop;
+    const isVisited = visitedStops.has(i) && !isCurrent;
+    const isLast = i === stops.length - 1;
+
+    const item = document.createElement('div');
+    item.className = 'stop-item';
+    item.onclick = () => advanceToStop(i);
+
+    const col = document.createElement('div');
+    col.className = 'stop-dot-col';
+    const dot = document.createElement('div');
+    dot.className = 'stop-dot' + (isCurrent?' current':isVisited?' visited':'');
+    col.appendChild(dot);
+    if (!isLast) { const line = document.createElement('div'); line.className='stop-line'; col.appendChild(line); }
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'stop-name-text' + (isCurrent?' current-name':isVisited?' visited-name':'');
+    nameEl.textContent = name;
+
+    const badge = document.createElement('span');
+    badge.className = 'stop-badge';
+    if (isCurrent) { badge.classList.add('badge-here'); badge.textContent='HERE'; }
+    else if (isVisited) { badge.classList.add('badge-done'); badge.textContent='✓'; }
+
+    const num = document.createElement('div');
+    num.className = 'stop-num';
+    num.textContent = String(i+1).padStart(2,'0');
+
+    item.appendChild(col); item.appendChild(nameEl); item.appendChild(badge); item.appendChild(num);
+    list.appendChild(item);
+  });
+}
+
+function advanceToStop(i) {
+  if (i <= currentStop) return;
+  for (let j = currentStop; j <= i; j++) visitedStops.add(j);
+  currentStop = i;
+  syncHubProgress();
+  renderStops();
+}
+
+function syncHubProgress() {
+  const pct = visitedStops.size / stops.length * 100;
+  const pb = document.getElementById('hub-pbar');
+  const sn = document.getElementById('hub-stop-name');
+  if (pb) pb.style.width = pct + '%';
+  if (sn) sn.textContent = (stops[currentStop]||'COMPLETE').toUpperCase();
+}
+
+function pick(list, used) {
+  if (used.length >= list.length) used.length = 0;
+  const avail = list.map((v,i)=>({v,i})).filter(x=>!used.includes(x.i));
+  const c = avail[Math.floor(Math.random()*avail.length)];
+  used.push(c.i);
+  return c.v;
+}
+
+function setDirective(textId, hubText, val) {
+  const el = document.getElementById(textId);
+  el.textContent = val; el.style.color=''; el.style.fontWeight='600'; el.style.fontSize='';
+  const hub = document.getElementById('hub-last-text');
+  hub.textContent = hubText + val; hub.style.color=''; hub.style.fontWeight=''; hub.style.fontSize='';
+}
+
+function generateDrink() { setDirective('drink-text','🎯 ',pick(drinks,usedDrinks)); }
+function generateQuest() { setDirective('quest-text','🕵️ ',pick(quests,usedQuests)); }
+function generateForfeit() { setDirective('forfeit-text','💀 ',pick(forfeits,usedForfeits)); }
+
+function assignAgent(id) {
+  if (!agents.length) { alert('Register agents first!'); return; }
+  document.getElementById(id).textContent = agents[Math.floor(Math.random()*agents.length)];
+}
+
+function resetScoreboard() {
+  ['sb-mvp','sb-chaos','sb-liability','sb-drink'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent='— TAP —';
+  });
+}
+
+function restartChaos() {
+  agents=[]; currentStop=0; visitedStops=new Set([0]);
+  usedDrinks=[]; usedQuests=[]; usedForfeits=[];
+  document.querySelectorAll('#agent-inputs .agent-input').forEach(i=>i.value='');
+  const hub=document.getElementById('hub-last-text');
+  hub.textContent='Awaiting instruction...'; hub.style.color='rgba(255,255,255,0.25)'; hub.style.fontWeight='400'; hub.style.fontSize='15px';
+  ['drink-text','quest-text','forfeit-text'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.textContent='';el.style.color='rgba(255,255,255,0.25)';el.style.fontWeight='400';el.style.fontSize='15px';}
+  });
+  resetScoreboard(); syncHubProgress(); goTo('screen-start');
+}
+</script>
+</body>
+</html>
